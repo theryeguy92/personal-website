@@ -6,17 +6,14 @@ services:
     container_name: mysql-container
     restart: always
     ports:
-      - "3306:3306"  # Map to port 3306
+      - "3306:3306"  # Map MySQL to host port 3306
     env_file:
-      - /home/ryan/secure-directory/db-credentials/personal-website/.env
+      - /home/ryan/secure-directory/db-credentials/personal-website/.env  # MySQL environment variables
     volumes:
       - mysql_data:/var/lib/mysql  # MySQL data persistence
       - ./MySQL/website-schema.sql:/docker-entrypoint-initdb.d/website-schema.sql  # Schema setup
     networks:
       - backend
-    environment:
-      # Explicitly set root password in case the env_file is not read properly
-      MYSQL_ROOT_PASSWORD: K29qT&Z28j!L4p^m5
 
   backend:
     build:
@@ -25,14 +22,12 @@ services:
     container_name: backend-container
     restart: always
     ports:
-      - "5000:5000"  # Map backend to port 5000
+      - "5000:5000"  # Map backend to host port 5000
     depends_on:
       - mysql  # Ensure MySQL starts before backend
     volumes:
-      - ./backend:/app
-      - /home/ryan/secure-directory/db-credentials/personal-website/.env
-    env_file:
-      - /home/ryan/secure-directory/db-credentials/personal-website/.env  # Backend environment variables
+      - ./backend:/app  # Mount backend code for development
+      - /home/ryan/secure-directory/db-credentials/personal-website/.env:/app/.env  # Mount environment file
     networks:
       - backend
 
@@ -43,7 +38,7 @@ services:
     container_name: frontend-container
     restart: always
     ports:
-      - "3000:3000"  # Map frontend to port 3000
+      - "3000:80"  # Map frontend to host port 3000
     networks:
       - backend
 
