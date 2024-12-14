@@ -1,0 +1,441 @@
+.
+├── backend
+│   ├── app.py
+│   ├── cred.txt
+│   ├── Dockerfile
+│   ├── .env
+│   └── requirements.txt
+├── docker-compose.yml
+├── error.log
+├── frontend
+│   ├── Dockerfile
+│   ├── .dockerignore
+│   ├── .env
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── public
+│   │   └── index.html
+│   └── src
+│       ├── App.js
+│       └── index.js
+├── MySQL
+│   └── website-schema.sql
+├── project_structure_and_contents.txt
+├── proj_struct.sh
+└── scripts
+    └── backup_mysql.sh
+
+7 directories, 19 files
+
+==== Contents of: ./docker-compose.yml ====
+
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    restart: always
+    ports:
+      - "3306:3306"  # Map to port 3306
+    env_file:
+      - /home/ryan/secure-directory/db-credentials/personal-website/.env
+    volumes:
+      - mysql_data:/var/lib/mysql  # MySQL data persistence
+      - ./MySQL/website-schema.sql:/docker-entrypoint-initdb.d/website-schema.sql  # Schema setup
+    networks:
+      - backend
+    environment:
+      # Explicitly set root password in case the env_file is not read properly
+      MYSQL_ROOT_PASSWORD: K29qT&Z28j!L4p^m5
+
+  backend:
+    build:
+      context: ./backend  # Path to backend directory
+      dockerfile: Dockerfile
+    container_name: backend-container
+    restart: always
+    ports:
+      - "5000:5000"  # Map backend to port 5000
+    depends_on:
+      - mysql  # Ensure MySQL starts before backend
+    volumes:
+      - ./backend:/app
+      - ./backend/cred.txt:/app/cred.txt
+    env_file:
+      - ./backend/.env  # Backend environment variables
+    networks:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend  # Path to frontend directory
+      dockerfile: Dockerfile
+    container_name: frontend-container
+    restart: always
+    ports:
+      - "3000:3000"  # Map frontend to port 3000
+    networks:
+      - backend
+
+volumes:
+  mysql_data:  # MySQL data persistence
+
+networks:
+  backend:  # Shared network for all services
+
+==== Contents of: ./MySQL/website-schema.sql ====
+
+-- Create the database
+CREATE DATABASE IF NOT EXISTS website_analytics;
+
+-- Use the db
+USE website_analytics;
+
+-- Create Table for User Access to Personal Website
+CREATE TABLE user_access(
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Generic ID for any user
+    entity_name VARCHAR(255), -- Could represent a company, organization, or individual
+    access_key VARCHAR(255) UNIQUE, -- Unique key for user access
+    login_count INT DEFAULT 0, -- Track login attempts
+    last_login DATETIME -- Track the last login time
+);
+
+-- Interaction Logs Table
+CREATE TABLE interaction_logs(
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique ID for each interaction
+    user_id INT, -- References user_access.id
+    action_type ENUM('page_view', 'click', 'share'), -- Type of interaction
+    action_details JSON, -- Detailed information about the interaction
+    ip_address VARCHAR(45), -- Track IP for analytics/sharing
+    user_agent TEXT, -- Device/browser detailsy, organization, or individual
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, -- Interaction time
+    FOREIGN KEY (user_id) REFERENCES user_access(id) ON DELETE CASCADE -- data integrity
+);
+
+-- Feature Use Log Table
+CREATE TABLE feature_usage(
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique ID for each feature usage log
+    user_id INT, -- References user_access.id
+    feature_name ENUM('Proj Page', 'Emulator', 'Dashboard'), -- Feature used
+    action_type ENUM('view', 'click'), -- action performed
+    action_details JSON, -- Additional details in JSON
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP, -- Time of action
+    FOREIGN KEY (user_id) REFERENCES user_access(id) ON DELETE CASCADE -- data integrity
+);
+
+-- Projects Table
+CREATE TABLE projects(
+    id INT AUTO_INCREMENT PRIMARY KEY, -- Unique ID for each project
+    name VARCHAR(255) NOT NULL, -- Name of Project
+    description TEXT, -- Description of project
+    link VARCHAR(255), -- Link to project
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP -- Creation Timestamp
+);
+
+-- Performance Indexes
+CREATE INDEX idx_user_id_interactions ON interaction_logs(user_id);
+CREATE INDEX idx_timestamp_interactions ON interaction_logs(timestamp);
+CREATE INDEX idx_user_id_features ON feature_usage(user_id);
+CREATE INDEX idx_timestamp_features ON feature_usage(timestamp);
+==== Contents of: ./error.log ====
+
+mysqldump: [Warning] Using a password on the command line interface can be insecure.
+
+==== Contents of: ./backend/cred.txt ====
+
+/home/ryan/secure-directory/db-credentials/personal-website/.env
+==== Contents of: ./backend/Dockerfile ====
+
+# Backend Dockerfile
+FROM python:3.10-slim
+
+# Install system dependencies for mysqlclient
+RUN apt-get update && apt-get install -y \
+    gcc \
+    default-libmysqlclient-dev \
+    pkg-config \
+    && apt-get clean
+
+WORKDIR /app
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy source code and environment files
+COPY . .
+
+# Expose the backend port
+EXPOSE 5000
+
+# Start the Flask app
+CMD ["python", "app.py"]
+
+==== Contents of: ./backend/requirements.txt ====
+
+Flask==2.3.2
+Flask-Cors==3.0.10
+Flask-MySQLdb==0.2.0
+python-dotenv==1.0.0
+Flask-SQLAlchemy==3.0.5
+mysqlclient==2.2.0
+marshmallow==3.19.0
+pytest==7.4.2
+pytest-flask==1.2.0
+mysql-connector-python==8.0.33
+==== Contents of: ./backend/app.py ====
+
+from flask import Flask, jsonify
+from flask_cors import CORS
+import mysql.connector
+from dotenv import load_dotenv
+import os
+
+# Load the backend file
+load_dotenv()
+
+# Read the path to the credential files
+cred_file_path = os.path.join(os.getcwd(), os.getenv('CRED_TXT_PATH', './cred.txt'))
+if cred_file_path and os.path.exists(cred_file_path):
+    with open(cred_file_path, 'r') as file:
+        real_env_path = file.read().strip()
+        load_dotenv(dotenv_path=real_env_path)
+else:
+    raise FileNotFoundError(f"{cred_file_path} Not found or Invalid.")
+
+app = Flask(__name__)
+CORS(app)
+
+# DB Config
+db_config = {
+    'host': 'mysql',
+    'user': os.getenv('MYSQL_USER'),
+    'password': os.getenv('MYSQL_PASSWORD'),
+    'database': os.getenv('MYSQL_DATABASE'),
+}
+
+@app.route('/api/projects', methods=['GET'])
+def get_projects():
+    """ Fetch Project Data via the database """
+    try:
+        connection = mysql.connector.connect(**db_config)
+        cursor = connection.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM projects")  # for testing
+        projects = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        return jsonify({'status': 'success', 'data': projects})
+    except mysql.connector.Error as err:
+        return jsonify({'status': 'error', 'message': str(err)}), 500
+
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    """ Health check endpoint, verify API and DB connectivity """
+    try:
+        connection = mysql.connector.connect(**db_config)
+        if connection.is_connected():
+            connection.close()
+            return jsonify({'status': 'success', 'message': 'API and DB connection are healthy'}), 200
+    except mysql.connector.Error as err:
+        return jsonify({'status': 'error', 'message': f'DB connection failed: {str(err)}'}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
+==== Contents of: ./backend/.env ====
+
+CRED_TXT_PATH=/app/cred.txt
+==== Contents of: ./proj_struct.sh ====
+
+# Define the output file
+OUTPUT_FILE="project_structure_and_contents.txt"
+
+# Start by printing the directory structure, completely ignoring node_modules
+tree -L 3 -a -I 'node_modules' --prune > "$OUTPUT_FILE"
+
+# Append the contents of files, excluding node_modules and specific files like package-lock.json
+find . -type f \
+    -not -path './frontend/node_modules/*' \
+    -not -name 'package-lock.json' | while read -r file; do
+    echo -e "\n==== Contents of: $file ====\n" >> "$OUTPUT_FILE"
+    cat "$file" >> "$OUTPUT_FILE"
+done
+
+# Inform the user of the output
+echo "Project directory and file contents saved to $OUTPUT_FILE"
+
+==== Contents of: ./project_structure_and_contents.txt ====
+
+
+==== Contents of: ./frontend/package.json ====
+
+{
+    "name": "frontend",
+    "version": "1.0.0",
+    "private": true,
+    "dependencies": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "react-scripts": "^5.0.1"
+    },
+    "scripts": {
+      "start": "react-scripts start",
+      "build": "react-scripts build",
+      "test": "react-scripts test",
+      "eject": "react-scripts eject"
+    },
+    "eslintConfig": {
+      "extends": ["react-app", "react-app/jest"]
+    },
+    "browserslist": {
+      "production": [">0.2%", "not dead", "not op_mini all"],
+      "development": [
+        "last 1 chrome version",
+        "last 1 firefox version",
+        "last 1 safari version"
+      ]
+    }
+  }
+  
+==== Contents of: ./frontend/Dockerfile ====
+
+# Use an official Node.js runtime as the base image
+FROM node:16-slim AS build
+
+# Set the working directory inside the container
+WORKDIR /app
+
+# Copy package.json and package-lock.json to install dependencies
+COPY package.json package-lock.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy the rest of the application source code
+COPY . .
+
+# Build the React application
+RUN npm run build
+
+# Production stage
+FROM nginx:alpine
+
+# Copy built React app to NGINX html directory
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Expose port for NGINX
+EXPOSE 80
+
+# Start NGINX server
+CMD ["nginx", "-g", "daemon off;"]
+
+==== Contents of: ./frontend/public/index.html ====
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Website</title>
+</head>
+<body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+</body>
+</html>
+
+==== Contents of: ./frontend/src/App.js ====
+
+import React, { useEffect, useState } from 'react';
+
+function App() {
+    const [projects, setProjects] = useState([]);
+    const [error, setError] = useState(null);
+
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/projects';
+
+    useEffect(() => {
+        fetch(API_URL)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Failed to fetch projects');
+                }
+                return response.json();
+            })
+            .then((data) => setProjects(data.data || [])) // Handle empty data gracefully
+            .catch((error) => setError(error.message));
+    }, [API_URL]);
+
+    return (
+        <div>
+            <h1>Projects</h1>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            <ul>
+                {projects.map((project) => (
+                    <li key={project.id}>{project.name}</li>
+                ))}
+            </ul>
+        </div>
+    );
+}
+
+export default App;
+
+==== Contents of: ./frontend/src/index.js ====
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
+);
+
+==== Contents of: ./frontend/.dockerignore ====
+
+node_modules
+build
+.dockerignore
+.env.local
+
+==== Contents of: ./frontend/.env ====
+
+REACT_APP_API_URL=http://localhost:5000/api/projects
+
+==== Contents of: ./scripts/backup_mysql.sh ====
+
+#!/bin/bash
+
+# Navigate to the project directory
+cd /home/ryan/personal_website
+
+# Load environment variables from the .env file
+export $(grep -v '^#' /home/ryan/secure-directory/db-credentials/personal-website/.env | xargs)
+
+# Timestamp for backup file naming
+TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+BACKUP_DIR="./mysql_backups"
+BACKUP_FILE="$BACKUP_DIR/website_analytics_$TIMESTAMP.sql"
+
+# Ensure the backup directory exists
+mkdir -p $BACKUP_DIR
+
+# Debug: Print the backup directory
+echo "Backup directory: $BACKUP_DIR"
+
+# Run mysqldump using the dynamically loaded root password
+docker exec mysql-container mysqldump -u root -p"$MYSQL_ROOT_PASSWORD" website_analytics > $BACKUP_FILE 2> error.log
+
+# Debug: Check if the backup file was created
+if [ -f "$BACKUP_FILE" ]; then
+    echo "Backup completed: $BACKUP_FILE"
+else
+    echo "Backup failed. Check error.log for details."
+fi
+
+# Keep only the latest 7 backups
+find $BACKUP_DIR -type f -mtime +7 -name "*.sql" -exec rm {} \;

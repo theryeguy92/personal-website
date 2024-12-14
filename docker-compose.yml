@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-container
+    restart: always
+    ports:
+      - "3306:3306"  # Map to port 3306
+    env_file:
+      - /home/ryan/secure-directory/db-credentials/personal-website/.env
+    volumes:
+      - mysql_data:/var/lib/mysql  # MySQL data persistence
+      - ./MySQL/website-schema.sql:/docker-entrypoint-initdb.d/website-schema.sql  # Schema setup
+    networks:
+      - backend
+    environment:
+      # Explicitly set root password in case the env_file is not read properly
+      MYSQL_ROOT_PASSWORD: K29qT&Z28j!L4p^m5
+
+  backend:
+    build:
+      context: ./backend  # Path to backend directory
+      dockerfile: Dockerfile
+    container_name: backend-container
+    restart: always
+    ports:
+      - "5000:5000"  # Map backend to port 5000
+    depends_on:
+      - mysql  # Ensure MySQL starts before backend
+    volumes:
+      - ./backend:/app
+      - /home/ryan/secure-directory/db-credentials/personal-website/.env
+    env_file:
+      - /home/ryan/secure-directory/db-credentials/personal-website/.env  # Backend environment variables
+    networks:
+      - backend
+
+  frontend:
+    build:
+      context: ./frontend  # Path to frontend directory
+      dockerfile: Dockerfile
+    container_name: frontend-container
+    restart: always
+    ports:
+      - "3000:3000"  # Map frontend to port 3000
+    networks:
+      - backend
+
+volumes:
+  mysql_data:  # MySQL data persistence
+
+networks:
+  backend:  # Shared network for all services
