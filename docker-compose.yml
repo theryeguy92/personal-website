@@ -14,9 +14,6 @@ services:
       - ./MySQL/website-schema.sql:/docker-entrypoint-initdb.d/website-schema.sql  # Schema setup
     networks:
       - backend
-    environment:
-      # Explicitly set root password in case the env_file is not read properly
-      MYSQL_ROOT_PASSWORD: K29qT&Z28j!L4p^m5
 
   backend:
     build:
