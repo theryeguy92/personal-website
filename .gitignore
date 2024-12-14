@@ -1,0 +1,22 @@
+# Logs
+error.log
+
+# Node modules
+frontend/node_modules/
+
+# React build artifacts
+frontend/build/
+
+# Environment files
+backend/.env
+frontend/.env
+
+# Credentials and sensitive files
+backend/cred.txt
+
+# Scripts and temporary files
+proj_struct.sh
+project_structure_and_contents.txt
+
+# Docker-related files
+docker-compose.override.yml
