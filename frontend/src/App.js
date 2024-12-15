@@ -1,4 +1,3 @@
-// App.js
 import React, { useEffect, useState } from "react";
 import { Box, VStack, Spinner, Alert } from "@chakra-ui/react";
 import { Provider } from "./components/provider";
@@ -24,7 +23,7 @@ function App() {
         return response.json();
       })
       .then((data) => {
-        setProjects(data.data || []);
+        setProjects(data.data || []); // Use API response data
         setLoading(false);
       })
       .catch((error) => {

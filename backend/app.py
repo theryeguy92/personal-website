@@ -33,7 +33,7 @@ def get_projects():
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM projects")  # for testing
+        cursor.execute("SELECT * FROM projects")  # Query to fetch all projects
         projects = cursor.fetchall()
         cursor.close()
         connection.close()
