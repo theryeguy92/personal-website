@@ -44,14 +44,12 @@ services:
 
   emulator:
     build:
-      context: ./emulator  # Path to emulator directory
+      context: ./backend/emulator  # Path to emulator directory
       dockerfile: Dockerfile.emulator
     container_name: emulator-container
     restart: always
     ports:
-      - "8081:8081"  # Map emulator to host port 8081
-    networks:
-      - backend
+      - "8081:8081"  # Expose emulator on port 8081
 
 volumes:
   mysql_data:  # MySQL data persistence

@@ -1,30 +1,62 @@
-# NES Emulator Dockerfile
-FROM openjdk:17-jdk-slim
+# Use an OpenJDK base image
+FROM openjdk:21-slim
 
-# Install necessary build tools (e.g., Maven, Git)
+# Install necessary build tools (e.g., Maven, Git, Unzip, Curl)
 RUN apt-get update && apt-get install -y \
     git \
     maven \
+    unzip \
+    curl \
     && apt-get clean
 
-# Set working directory
+# Set the working directory
 WORKDIR /app
+
+# Download and install JavaFX SDK (version 21.0.5)
+RUN curl -L -o javafx-sdk.zip https://download2.gluonhq.com/openjfx/21.0.5/openjfx-21.0.5_linux-x64_bin-sdk.zip && \
+    unzip javafx-sdk.zip && \
+    mv javafx-sdk-21.0.5 /opt/javafx-sdk && \
+    rm javafx-sdk.zip
+
+# Set JavaFX SDK environment variables
+ENV JAVAFX_HOME=/opt/javafx-sdk
+ENV PATH=$JAVAFX_HOME/lib:$PATH
+
+# Verify the installation of JavaFX SDK
+RUN echo "Verifying JavaFX SDK Installation..." && \
+    ls -l /opt/javafx-sdk/lib/
 
 # Clone the NES Emulator repository
-RUN git clone https://github.com/theryeguy92/Java-NES-Emul-Web.git nes_emulator
+RUN git clone https://github.com/theryeguy92/Java-NES-Emul-Web nes_emulator
 
-# Build the NES Emulator JAR
+# Navigate into the cloned repository
 WORKDIR /app/nes_emulator
+
+# Configure Maven for JavaFX
+RUN sed -i '/<plugins>/a\
+    <plugin>\
+        <groupId>org.apache.maven.plugins</groupId>\
+        <artifactId>maven-compiler-plugin</artifactId>\
+        <version>3.10.0</version>\
+        <configuration>\
+            <release>17</release>\
+            <compilerArgs>\
+                <arg>--module-path</arg>\
+                <arg>/opt/javafx-sdk/lib</arg>\
+                <arg>--add-modules</arg>\
+                <arg>javafx.controls,javafx.fxml</arg>\
+            </compilerArgs>\
+        </configuration>\
+    </plugin>' pom.xml
+
+# Build the NES Emulator project
 RUN mvn clean package -DskipTests
 
-# Copy the built JAR file
-RUN cp target/*.jar /app/emulator_service.jar
-
-# Set working directory back to root
-WORKDIR /app
+# Move the shaded JAR to a consistent location
+RUN cp target/NEmuS-1.2-shaded.jar /app/NEmuS-1.2.jar
 
 # Expose the emulator port
 EXPOSE 8081
 
-# Run the emulator
-CMD ["java", "-jar", "emulator_service.jar"]
+# Run the NES emulator service
+CMD ["java", "--module-path", "/opt/javafx-sdk/lib", "--add-modules", "javafx.controls,javafx.fxml", "-jar", "/app/NEmuS-1.2.jar"]
