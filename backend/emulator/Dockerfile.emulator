@@ -1,0 +1,30 @@
+# NES Emulator Dockerfile
+FROM openjdk:17-jdk-slim
+
+# Install necessary build tools (e.g., Maven, Git)
+RUN apt-get update && apt-get install -y \
+    git \
+    maven \
+    && apt-get clean
+
+# Set working directory
+WORKDIR /app
+
+# Clone the NES Emulator repository
+RUN git clone https://github.com/theryeguy92/Java-NES-Emul-Web.git nes_emulator
+
+# Build the NES Emulator JAR
+WORKDIR /app/nes_emulator
+RUN mvn clean package -DskipTests
+
+# Copy the built JAR file
+RUN cp target/*.jar /app/emulator_service.jar
+
+# Set working directory back to root
+WORKDIR /app
+
+# Expose the emulator port
+EXPOSE 8081
+
+# Run the emulator
+CMD ["java", "-jar", "emulator_service.jar"]
