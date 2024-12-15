@@ -1,12 +1,13 @@
 # Use an OpenJDK base image
 FROM openjdk:21-slim
 
-# Install necessary build tools (e.g., Maven, Git, Unzip, Curl)
+# Install necessary tools
 RUN apt-get update && apt-get install -y \
     git \
     maven \
     unzip \
     curl \
+    xvfb \
     && apt-get clean
 
 # Set the working directory
@@ -23,8 +24,7 @@ ENV JAVAFX_HOME=/opt/javafx-sdk
 ENV PATH=$JAVAFX_HOME/lib:$PATH
 
 # Verify the installation of JavaFX SDK
-RUN echo "Verifying JavaFX SDK Installation..." && \
-    ls -l /opt/javafx-sdk/lib/
+RUN echo "Verifying JavaFX SDK Installation..." && ls -l /opt/javafx-sdk/lib/
 
 # Clone the NES Emulator repository
 RUN git clone https://github.com/theryeguy92/Java-NES-Emul-Web nes_emulator
@@ -44,7 +44,7 @@ RUN sed -i '/<plugins>/a\
                 <arg>--module-path</arg>\
                 <arg>/opt/javafx-sdk/lib</arg>\
                 <arg>--add-modules</arg>\
-                <arg>javafx.controls,javafx.fxml,javafx.graphics</arg>\
+                <arg>javafx.controls,javafx.fxml</arg>\
             </compilerArgs>\
         </configuration>\
     </plugin>' pom.xml
@@ -52,20 +52,16 @@ RUN sed -i '/<plugins>/a\
 # Build the NES Emulator project
 RUN mvn clean package -DskipTests
 
-# Confirm the JAR file location
-RUN echo "Checking contents of target directory..." && ls -l target/
-
 # Move the JAR to a consistent location
 RUN cp target/NEmuS-1.2.jar /app/NEmuS-1.2.jar
 
 # Expose the emulator port
 EXPOSE 8081
 
-# Run the NES emulator service with forceful module opens
-CMD ["java", "--module-path", "/opt/javafx-sdk/lib", \
-     "--add-modules", "javafx.controls,javafx.fxml,javafx.graphics", \
-     "--add-opens", "javafx.graphics/com.sun.javafx.application=ALL-UNNAMED", \
+# Run the NES emulator service with xvfb
+CMD ["xvfb-run", "--server-args=-screen 0 1024x768x24", "java", \
+     "--module-path", "/opt/javafx-sdk/lib", \
+     "--add-modules", "javafx.controls,javafx.fxml", \
      "--add-opens", "javafx.base/com.sun.javafx.logging=ALL-UNNAMED", \
-     "--add-opens", "javafx.graphics/com.sun.javafx.stage=ALL-UNNAMED", \
-     "--add-opens", "javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED", \
+     "--add-opens", "javafx.graphics/com.sun.javafx.application=ALL-UNNAMED", \
      "-jar", "/app/NEmuS-1.2.jar"]
