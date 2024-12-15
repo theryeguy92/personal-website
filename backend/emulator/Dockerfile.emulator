@@ -44,7 +44,7 @@ RUN sed -i '/<plugins>/a\
                 <arg>--module-path</arg>\
                 <arg>/opt/javafx-sdk/lib</arg>\
                 <arg>--add-modules</arg>\
-                <arg>javafx.controls,javafx.fxml</arg>\
+                <arg>javafx.controls,javafx.fxml,javafx.graphics</arg>\
             </compilerArgs>\
         </configuration>\
     </plugin>' pom.xml
@@ -52,11 +52,20 @@ RUN sed -i '/<plugins>/a\
 # Build the NES Emulator project
 RUN mvn clean package -DskipTests
 
-# Move the shaded JAR to a consistent location
-RUN cp target/NEmuS-1.2-shaded.jar /app/NEmuS-1.2.jar
+# Confirm the JAR file location
+RUN echo "Checking contents of target directory..." && ls -l target/
+
+# Move the JAR to a consistent location
+RUN cp target/NEmuS-1.2.jar /app/NEmuS-1.2.jar
 
 # Expose the emulator port
 EXPOSE 8081
 
-# Run the NES emulator service
-CMD ["java", "--module-path", "/opt/javafx-sdk/lib", "--add-modules", "javafx.controls,javafx.fxml", "-jar", "/app/NEmuS-1.2.jar"]
+# Run the NES emulator service with forceful module opens
+CMD ["java", "--module-path", "/opt/javafx-sdk/lib", \
+     "--add-modules", "javafx.controls,javafx.fxml,javafx.graphics", \
+     "--add-opens", "javafx.graphics/com.sun.javafx.application=ALL-UNNAMED", \
+     "--add-opens", "javafx.base/com.sun.javafx.logging=ALL-UNNAMED", \
+     "--add-opens", "javafx.graphics/com.sun.javafx.stage=ALL-UNNAMED", \
+     "--add-opens", "javafx.controls/com.sun.javafx.scene.control=ALL-UNNAMED", \
+     "-jar", "/app/NEmuS-1.2.jar"]
