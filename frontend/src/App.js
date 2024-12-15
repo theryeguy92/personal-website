@@ -1,23 +1,25 @@
 // App.js
-import React, { useEffect, useState } from 'react';
-//import theme from './theme/theme'; // Adjusted path to match the file structure
-import { Box, Heading, VStack, Spinner, Alert } from '@chakra-ui/react';
-import { Provider } from './components/provider';
-import ProjectCard from './components/ProjectCard'; // Import the ProjectCard component
+import React, { useEffect, useState } from "react";
+import { Box, VStack, Spinner, Alert } from "@chakra-ui/react";
+import { Provider } from "./components/provider";
+import Hero from "./components/Hero";
+import Projects from "./components/Projects";
+import Footer from "./components/Footer";
 
 function App() {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api/projects';
+  const API_URL =
+    process.env.REACT_APP_API_URL || "http://localhost:5000/api/projects";
 
   // Fetch project data from the API
   useEffect(() => {
     fetch(API_URL)
       .then((response) => {
         if (!response.ok) {
-          throw new Error('Failed to fetch projects');
+          throw new Error("Failed to fetch projects");
         }
         return response.json();
       })
@@ -33,29 +35,30 @@ function App() {
 
   return (
     <Provider>
-      <Box bg="gray.50" minH="100vh" p={8}>
-        <VStack spacing={6}>
-          <Heading as="h1" size="xl" color="brand.500">
-            My Projects
-          </Heading>
-          {/* Show loading spinner */}
-          {loading && <Spinner size="xl" color="brand.500" />}
+      <Box p={4}>
+        <VStack spacing={8} align="stretch">
+          {/* Hero Section */}
+          <Hero />
 
-          {/* Show error alert */}
+          {/* Loading State */}
+          {loading && (
+            <Box textAlign="center">
+              <Spinner size="xl" />
+            </Box>
+          )}
+
+          {/* Error State */}
           {error && (
-            <Alert status="error" bg="red.50" color="red.700" borderRadius="md" p={4}>
+            <Alert status="error" justifyContent="center">
               {error}
             </Alert>
           )}
 
-          {/* Show project cards */}
-          {!loading && !error && (
-            <VStack spacing={4} align="stretch" w="100%" maxW="600px">
-              {projects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </VStack>
-          )}
+          {/* Projects Section */}
+          {!loading && !error && <Projects projects={projects} />}
+
+          {/* Footer */}
+          <Footer />
         </VStack>
       </Box>
     </Provider>

@@ -1,18 +1,31 @@
-// theme.js
-import { createSystem, defaultBaseConfig, defineConfig } from '@chakra-ui/react';
+import { extendTheme } from "@chakra-ui/react";
 
-const customConfig = defineConfig({
-  theme: {
-    tokens: {
-      colors: {
-        brand: {
-          500: { value: '#3182CE' }, // Custom brand color
-        },
+const theme = extendTheme({
+  config: {
+    initialColorMode: "dark", // Default to dark mode
+    useSystemColorMode: false, // Disable system preference for color mode
+  },
+  styles: {
+    global: {
+      "html, body": {
+        margin: 0,
+        padding: 0,
+        bg: "gray.100", // Default light theme background
+        color: "gray.800",
       },
     },
   },
+  colors: {
+    brand: {
+      primary: "#2D3748", // Dark gray
+      secondary: "#3182CE", // Blue accent
+      background: "#EDF2F7", // Light gray background
+    },
+  },
+  fonts: {
+    heading: "Poppins, sans-serif",
+    body: "Roboto, sans-serif",
+  },
 });
 
-const system = createSystem(defaultBaseConfig, customConfig);
-
-export default system;
+export default theme;
