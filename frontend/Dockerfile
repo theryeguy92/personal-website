@@ -13,6 +13,9 @@ RUN npm install
 # Copy the rest of the application source code
 COPY . .
 
+# Verify Chakra UI installation
+RUN npm list @chakra-ui/react
+
 # Build the React application
 RUN npm run build
 
