@@ -17,7 +17,9 @@ else:
     raise FileNotFoundError(f"{cred_file_path} Not found or Invalid.")
 
 app = Flask(__name__)
-CORS(app)
+#CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 # DB Config
 db_config = {

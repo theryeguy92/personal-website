@@ -1,10 +1,11 @@
-import { Box, SimpleGrid, Heading, Image, Text, Link } from "@chakra-ui/react";
+import { Box, SimpleGrid, Heading, Image, Text } from "@chakra-ui/react";
+import { Link } from "react-router-dom"; // Import Link from React Router
 
 // Default fallback if no projects are provided
 const fallbackProjects = [
-  { title: "Project 1", image: "./assets/nes_emulator_image.png", link: "http://emulator:8081" },
-  { title: "Project 2", image: "./assets/waffle_house_project.png", link: "#" },
-  { title: "Project 3", image: "https://via.placeholder.com/300", link: "#" },
+  { id: 1, title: "Project 1", image: "./assets/nes_emulator_image.png", link: "/emulator" },
+  { id: 2, title: "Project 2", image: "./assets/waffle_house_project.png", link: "#" },
+  { id: 3, title: "Project 3", image: "https://via.placeholder.com/300", link: "#" },
 ];
 
 const Projects = ({ projects = [] }) => {
@@ -16,12 +17,8 @@ const Projects = ({ projects = [] }) => {
         Projects
       </Heading>
       <SimpleGrid columns={[1, 2, 3]} spacing={8}>
-        {displayedProjects.map((project, index) => (
-          <Link
-            href={project.link || "#"}
-            isExternal
-            key={index}
-          >
+        {displayedProjects.map((project) => (
+          <Link to={project.link || "#"} key={project.id || project.title}>
             <Box
               boxShadow="lg"
               borderRadius="lg"
