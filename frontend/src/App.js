@@ -1,10 +1,12 @@
-// App.js
 import React, { useEffect, useState } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { Box, VStack, Spinner, Alert } from "@chakra-ui/react";
 import { Provider } from "./components/provider";
 import Hero from "./components/Hero";
 import Projects from "./components/Projects";
 import Footer from "./components/Footer";
+import ProjectDetails from "./components/ProjectDetails";
+import EmulatorPage from "./components/Emulatorpage"; // Import EmulatorPage
 
 function App() {
   const [projects, setProjects] = useState([]);
@@ -14,7 +16,6 @@ function App() {
   const API_URL =
     process.env.REACT_APP_API_URL || "http://localhost:5000/api/projects";
 
-  // Fetch project data from the API
   useEffect(() => {
     fetch(API_URL)
       .then((response) => {
@@ -35,32 +36,38 @@ function App() {
 
   return (
     <Provider>
-      <Box p={4}>
-        <VStack spacing={8} align="stretch">
-          {/* Hero Section */}
-          <Hero />
+      <Router>
+        <Box p={4}>
+          <VStack spacing={8} align="stretch">
+            <Hero />
 
-          {/* Loading State */}
-          {loading && (
-            <Box textAlign="center">
-              <Spinner size="xl" />
-            </Box>
-          )}
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <>
+                    {loading && (
+                      <Box textAlign="center">
+                        <Spinner size="xl" />
+                      </Box>
+                    )}
+                    {error && (
+                      <Alert status="error" justifyContent="center">
+                        {error}
+                      </Alert>
+                    )}
+                    {!loading && !error && <Projects projects={projects} />}
+                  </>
+                }
+              />
+              <Route path="/projects/:id" element={<ProjectDetails />} />
+              <Route path="/emulator" element={<EmulatorPage />} /> {/* Add Emulator Route */}
+            </Routes>
 
-          {/* Error State */}
-          {error && (
-            <Alert status="error" justifyContent="center">
-              {error}
-            </Alert>
-          )}
-
-          {/* Projects Section */}
-          {!loading && !error && <Projects projects={projects} />}
-
-          {/* Footer */}
-          <Footer />
-        </VStack>
-      </Box>
+            <Footer />
+          </VStack>
+        </Box>
+      </Router>
     </Provider>
   );
 }

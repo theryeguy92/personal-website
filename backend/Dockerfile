@@ -1,7 +1,7 @@
 # Backend Dockerfile
 FROM python:3.10-slim
 
-# Install system dependencies for mysqlclient
+# Install system dependencies (mysqlclient)
 RUN apt-get update && apt-get install -y \
     gcc \
     default-libmysqlclient-dev \

@@ -50,3 +50,9 @@ CREATE INDEX idx_user_id_interactions ON interaction_logs(user_id);
 CREATE INDEX idx_timestamp_interactions ON interaction_logs(timestamp);
 CREATE INDEX idx_user_id_features ON feature_usage(user_id);
 CREATE INDEX idx_timestamp_features ON feature_usage(timestamp);
+
+-- Insert Default Projects Data
+INSERT INTO projects (name, description, link) VALUES 
+('NES Emulator', 'An NES emulator playable on the website', '/emulator'),
+('Project 2', 'A sample project description', '#'),
+('Project 3', 'Another sample project', '#');

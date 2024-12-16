@@ -17,7 +17,9 @@ else:
     raise FileNotFoundError(f"{cred_file_path} Not found or Invalid.")
 
 app = Flask(__name__)
-CORS(app)
+#CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 # DB Config
 db_config = {
@@ -33,7 +35,7 @@ def get_projects():
     try:
         connection = mysql.connector.connect(**db_config)
         cursor = connection.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM projects")  # for testing
+        cursor.execute("SELECT * FROM projects")  # Query to fetch all projects
         projects = cursor.fetchall()
         cursor.close()
         connection.close()
